@@ -129,6 +129,8 @@ try{
 	project.ext.pl_test_module = pl_file.replaceAll(".pl", '')
 }
 
+// c files for the linker for this library only
+
 try{
 	c_files = c_files
 }catch(MissingPropertyException e){
@@ -150,8 +152,37 @@ try{
 	}
 	
 	println c_files
-	
+}
 
+
+// c files which are referenced in a ressources folder which will be used by multiple libraries 
+// the file can be defined with c_resource_dir = "your_folder/"
+
+try{
+	
+	c_resource_dir = c_resource_dir
+	
+	// c files
+	def c_rsrc_folder = new File (c_resource_dir)
+	def c_rsrc_files = c_rsrc_folder.listFiles()
+	
+	 project.ext.c_resources = []
+		
+	if(c_rsrc_files != null){
+		int k = 0
+		for( int i = 0; i < c_rsrc_files.size(); i++){
+			if( c_rsrc_files[i].getName() ==~ /.*\.cpp/ || c_rsrc_files[i].getName() ==~ /.*\.c/ ){
+				c_resources[k] = c_resource_dir+c_rsrc_files[i].getName() 
+				k++
+			}
+		}
+	}
+	
+	println c_resources
+	
+}catch(MissingPropertyException e){
+	
+	project.ext.c_resources = []
 }
 
 
@@ -194,7 +225,7 @@ task link ( dependsOn: ['makeLibDir'], type:Exec) {
 	
 	outputs.file outputFiles+lib+"."+shext
 	
-	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles +lib +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + c_files
+	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles +lib +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + c_files + c_resources
 	def bundle = new File ( lib +'.'+shext )
 }
 
