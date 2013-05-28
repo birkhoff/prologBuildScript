@@ -1,0 +1,221 @@
+apply plugin: 'base'
+
+try{
+	c_srcs = c_srcs
+}catch(MissingPropertyException e){
+	project.ext.c_srcs = "${projectDir}/src/cpp/"
+}
+
+try{
+	pl_srcs = pl_srcs
+}catch(MissingPropertyException e){
+	project.ext.pl_srcs = "${projectDir}/src/prolog/"
+}
+
+try{
+	lib = lib
+}catch(MissingPropertyException e){
+	project.ext.lib = project.name
+}
+
+
+
+// name the goal for splfr
+try{
+	goal = goal
+}catch(MissingPropertyException e){
+	project.ext.goal = "at_build"
+}
+
+// set c Flags for Compiler
+try{
+	c_flags = c_flags
+}catch(MissingPropertyException e){
+	project.ext.c_flags = [ '--cflag=-m64', '-lgcc', '-lstdc++']
+}
+
+
+try{
+	pl_tests = pl_tests
+}catch(MissingPropertyException e){
+	project.ext.pl_tests = "test,halt."
+}
+
+project.ext {
+	
+	OS = System.getProperty("os.name"); 
+	OSArch = System.getProperty("os.arch")
+	
+	isMac = false
+	isWindows = false
+	isLinux = false
+	shext = "bundle"
+	
+	if( OS.startsWith("Mac") ){
+		isMac = true
+		shext = "bundle"
+		
+	}else   if( OS.startsWith("Windows") ){
+		isWindows = true
+		shext = "dll"
+	}else{
+	 	isLinux = true
+		shext = "so"
+	}
+	
+	OSBit = 32
+	if( OSArch.contains("64") ){
+		OSBit = 64
+	}
+	
+	println "currently runnning on: " + OS + " " + OSBit +" Bit" +"\n"
+
+}
+
+
+try{
+	outputfile = outputfile
+}catch(MissingPropertyException e){
+	project.ext.outputfile = project.name + shext
+}
+
+
+try{
+	pl_file = pl_file
+}catch(MissingPropertyException e){
+	
+	// prolog files
+	def prologFolder = new File (pl_srcs)
+	def pl_src_files = prologFolder.listFiles()
+	
+	project.ext.pl_files = []
+	
+	
+	if(pl_src_files != null){
+		int k = 0
+		for( int i = 0; i < pl_src_files.size(); i++){
+			if( pl_src_files[i].getName() ==~ /.*\.pl/ && !(pl_src_files[i].getName() ==~ /.*[tT]est.*/) ){
+				pl_files[k] = pl_src_files[i].getName() 
+				k++
+			}
+		}
+	}
+	if(pl_files.size()>1){ 
+		
+		System.out.println "\n\tSwagOverflow Error!"
+		throw new IllegalArgumentException("Number of Prolog Sources must be exactly one. \nPlease define the Prolog Sources in another subfolder like /resources");
+	}
+	project.ext.pl_file = pl_files[0]
+	println pl_file
+}
+
+try{	
+	pl_ressource = pl_ressource
+}catch(MissingPropertyException e){
+	project.ext.pl_ressource = pl_file.replaceAll(".pl", '')
+}
+
+try{
+	
+	pl_test_file = pl_test_file
+}catch(MissingPropertyException e){
+	project.ext.pl_test_file = pl_file
+}
+
+
+try{	
+	pl_test_module = pl_test_module
+}catch(MissingPropertyException e){
+	project.ext.pl_test_module = pl_file.replaceAll(".pl", '')
+}
+
+try{
+	c_files = c_files
+}catch(MissingPropertyException e){
+	
+	// c files
+	def c_src_folder = new File (c_srcs)
+	def c_src_files = c_src_folder.listFiles()
+	
+	 project.ext.c_files = []
+		
+	if(c_src_files != null){
+		int k = 0
+		for( int i = 0; i < c_src_files.size(); i++){
+			if( c_src_files[i].getName() ==~ /.*\.cpp/ || c_src_files[i].getName() ==~ /.*\.c/ ){
+				c_files[k] = c_srcs+c_src_files[i].getName() 
+				k++
+			}
+		}
+	}
+	
+	println c_files
+	
+
+}
+
+
+try{
+	
+	outputFiles = outputFiles
+	destDir = new File( outputFiles)
+}catch(MissingPropertyException e){
+	project.ext.outputFiles	= "${buildDir}/lib/"
+	destDir = new File( outputFiles)
+}
+
+
+try{
+	extensionBuildFiles = extensionBuildFiles
+	extensionBuildDir = new File ( extensionBuildFiles)
+	
+}catch(MissingPropertyException e){
+	project.ext.extensionBuildFiles = "${buildDir}/"
+	extensionBuildDir = new File ( extensionBuildFiles)
+	
+}
+
+
+try{
+	
+	sicstusDir = sicstusDir
+}catch(MissingPropertyException e){
+	project.ext.sicstusDir = "/usr/local/sicstus/"
+	
+}
+
+
+task link ( dependsOn: ['makeLibDir'], type:Exec) {
+	
+	inputs.dir pl_srcs
+	inputs.dir c_srcs
+    outputs.file outputFiles+lib+"."+shext
+    outputs.file lib+"."+shext
+	
+	outputs.file outputFiles+lib+"."+shext
+	
+	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles +lib +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + c_files
+	def bundle = new File ( lib +'.'+shext )
+}
+
+
+task makeLibDir() << {
+
+	extensionBuildDir.mkdir()
+	destDir.mkdir()
+}
+
+task plTest ( dependsOn: ['makeLibDir'], type:Exec) {
+	
+	commandLine  'sicstus', '-l', pl_srcs+pl_test_file, '--goal', "${pl_test_module}:assert(user:library_directory('${outputFiles}')),${pl_tests}" 
+	// sicstus -l myheap.pl --goal "myheap:test,halt."
+}
+
+
+
+
+
+
+
+
+
