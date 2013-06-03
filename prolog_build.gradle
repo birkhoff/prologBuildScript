@@ -161,6 +161,8 @@ try{
 try{
 	
 	c_resource_dir = c_resource_dir
+
+}catch(MissingPropertyException e){
 	
 	// c files
 	def c_rsrc_folder = new File (c_resource_dir)
@@ -178,11 +180,6 @@ try{
 		}
 	}
 	
-	println c_resources
-	
-}catch(MissingPropertyException e){
-	
-	project.ext.c_resources = []
 }
 
 
