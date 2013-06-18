@@ -2,6 +2,12 @@ apply plugin: 'base'
 import groovy.io.FileType
 
 try{
+		enable_tests = true
+}	catch(MissingPropertyException e){
+		project.ext.enable_tests = false
+}
+
+try{
 	c_srcs = c_srcs
 }catch(MissingPropertyException e){
 	project.ext.c_srcs = "${projectDir}/src/cpp/"
@@ -88,13 +94,10 @@ project.ext {
 
 void getLibraries(){
 	
-	println "libvoid\n\n"
 	
 	project.ext.libraries = []				// List collecting all libs
 	
 	if(libFolder.exists()){
-		
-		println "libfolder Exists like Jesus"
 		
 		architectures = libFolder.listFiles()
 		
@@ -192,7 +195,7 @@ try{
 		throw new IllegalArgumentException("Number of Prolog Sources must be exactly one. \nPlease define the Prolog Sources in another subfolder like /resources");
 	}
 	project.ext.pl_file = pl_files[0]
-	println pl_file
+	println "Currently linking " + pl_file
 }
 
 try{	
@@ -237,7 +240,7 @@ try{
 		}
 	}
 	
-	println "\nc files to compile: " + c_files + "\n"
+	//println "\nc files to compile: " + c_files + "\n"
 }
 
 
@@ -324,9 +327,9 @@ task link ( dependsOn: ['makeLibDir'], type:Exec) {
 	all_c_files = c_files
 	if (c_resource_dir != null) all_c_files = all_c_files + c_resources
 	if (libraries != null && libraries.size != 0) all_c_files = all_c_files + ["-lstdc++"]+libraries + ["--LD"]
-	println "Libaries: " + libraries
+	//println "Libaries: " + libraries
 	
-	println	"\n\n" + 'splfr '+ '--verbose' + ' --output='+ outputFiles +outputName +'.'+ shext + ' --resource='+pl_ressource + " --source=" + pl_srcs +pl_file +" " + c_flags + all_c_files + "\n\n\n"
+	//println	"\n\n" + 'splfr '+ '--verbose' + ' --output='+ outputFiles +outputName +'.'+ shext + ' --resource='+pl_ressource + " --source=" + pl_srcs +pl_file +" " + c_flags + all_c_files + "\n\n\n"
 	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles + outputName +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + all_c_files
 	//def bundle = new File ( lib +'.'+shext )
 }
@@ -339,9 +342,12 @@ task makeLibDir() << {
 }
 
 task plTest ( dependsOn: ['makeLibDir'], type:Exec) {
-	
+	if (enable_tests) {
 	commandLine  'sicstus', '-l', pl_srcs+pl_test_file, '--goal', "${pl_test_module}:assert(user:library_directory('${outputFiles}')),${pl_tests}" 
 	// sicstus -l myheap.pl --goal "myheap:test,halt."
+	}else{
+		println "\n\tTests not enabled for project: ${projectDir}\n"
+	}
 }
 
 
