@@ -1,4 +1,5 @@
 apply plugin: 'base'
+import groovy.io.FileType
 
 try{
 	c_srcs = c_srcs
@@ -13,11 +14,18 @@ try{
 }
 
 try{
-	lib = lib
+	outputName = outputName
 }catch(MissingPropertyException e){
-	project.ext.lib = project.name
+	project.ext.outputName = project.name
 }
 
+
+// specify where libraries are located
+try{
+	project.ext.libFolder = new File( lib )
+}catch(MissingPropertyException e ){
+	project.ext.libFolder = new File( "${projectDir}/src/cpp/lib" )
+}
 
 
 // name the goal for splfr
@@ -69,9 +77,87 @@ project.ext {
 	}
 	
 	println "currently runnning on: " + OS + " " + OSBit +" Bit" +"\n"
+	
+	getLibraries()
+	
+	
 
 }
 
+
+
+void getLibraries(){
+	
+	println "libvoid\n\n"
+	
+	project.ext.libraries = []				// List collecting all libs
+	
+	if(libFolder.exists()){
+		
+		println "libfolder Exists like Jesus"
+		
+		architectures = libFolder.listFiles()
+		
+		libFolder.eachDir(){
+			
+			if (it.name ==~ /.*32.*/ && OSBit == 32) {
+				
+				String bitFolder = it.name
+			
+				it.eachFile FileType.FILE, {
+					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux){
+		
+						libraries << libFolder.name + bitFolder + it.name	
+					}
+					if (it.name ==~ /.*\.a/ && isMac) {
+						
+						libraries << libFolder.name + bitFolder + it.name
+					}
+					if (it.name ==~ /.*\.dll/ && isWindowd){
+					
+						libraries << libFolder.name + bitFolder + it.name
+					}
+				}
+			}else if (it.name ==~ /.*64.*/ && OSBit == 64) {
+				
+				String bitFolder = it.name
+				
+				it.eachFile FileType.FILES, {
+					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux){
+	
+						libraries << "${libFolder}/${bitFolder}/${it.name}"
+					}
+					if (it.name ==~ /.*\.a/ && isMac) {
+					
+						libraries << "${libFolder}/${bitFolder}/${it.name}"
+					}
+					if (it.name ==~ /.*\.dll/ && isWindowd){
+				
+						libraries << "${libFolder}/${bitFolder}/${it.name}"	
+					}
+				}
+			}
+		}
+		libFolder.eachFile FileType.FILES , {
+		
+			if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux){
+	
+				libraries << libFolder.name + it.name
+				
+			}
+			if (it.name ==~ /.*\.a/ && isMac) {
+					
+				libraries << libFolder.name + it.name
+			}
+			if (it.name ==~ /.*\.dll/ && isWindowd){
+				
+				libraries << libFolder.name + it.name
+			}
+		}
+	}
+	
+	
+}
 
 try{
 	outputfile = outputfile
@@ -151,7 +237,7 @@ try{
 		}
 	}
 	
-	println c_files
+	println "\nc files to compile: " + c_files + "\n"
 }
 
 
@@ -162,27 +248,37 @@ try{
 	
 	c_resource_dir = c_resource_dir
 	
-	// c files
-	def c_rsrc_folder = new File (c_resource_dir)
-	def c_rsrc_files = c_rsrc_folder.listFiles()
-	
-	 project.ext.c_resources = []
-		
-	if(c_rsrc_files != null){
-		int k = 0
-		for( int i = 0; i < c_rsrc_files.size(); i++){
-			if( c_rsrc_files[i].getName() ==~ /.*\.cpp/ || c_rsrc_files[i].getName() ==~ /.*\.c/ ){
-				c_resources[k] = c_resource_dir+c_rsrc_files[i].getName() 
-				k++
-			}
-		}
-	}
-	
-	println c_resources
-	
 }catch(MissingPropertyException e){
 	
+	c_resource_dir = null
+	println "no external resources defined"
+}
+
+
+// c files for the linker for this library only
+
+try{
+	c_resources = c_resources
+}catch(MissingPropertyException e){
+	
+	// c files	
 	project.ext.c_resources = []
+	
+	if (c_resource_dir != null) {
+		def c_rsrc_folder = new File (c_resource_dir)
+		def c_rsrc_files = c_rsrc_folder.listFiles()
+			
+		if(c_rsrc_files != null){
+			int k = 0
+			for( int i = 0; i < c_rsrc_files.size(); i++){
+				if( c_rsrc_files[i].getName() ==~ /.*\.cpp/ || c_rsrc_files[i].getName() ==~ /.*\.c/ ){
+					c_resources[k] = c_resource_dir+c_rsrc_files[i].getName() 
+					k++
+				}
+			}
+		}
+	
+	}
 }
 
 
@@ -220,13 +316,19 @@ task link ( dependsOn: ['makeLibDir'], type:Exec) {
 	
 	inputs.dir pl_srcs
 	inputs.dir c_srcs
-    outputs.file outputFiles+lib+"."+shext
-    outputs.file lib+"."+shext
+    outputs.file outputFiles+ outputName +"."+shext
+    outputs.file outputName+"."+shext
 	
-	outputs.file outputFiles+lib+"."+shext
+	outputs.file outputFiles+outputName+"."+shext
 	
-	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles +lib +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + c_files + c_resources
-	def bundle = new File ( lib +'.'+shext )
+	all_c_files = c_files
+	if (c_resource_dir != null) all_c_files = all_c_files + c_resources
+	if (libraries != null && libraries.size != 0) all_c_files = all_c_files + ["-lstdc++"]+libraries + ["--LD"]
+	println "Libaries: " + libraries
+	
+	println	"\n\n" + 'splfr '+ '--verbose' + ' --output='+ outputFiles +outputName +'.'+ shext + ' --resource='+pl_ressource + " --source=" + pl_srcs +pl_file +" " + c_flags + all_c_files + "\n\n\n"
+	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles + outputName +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + all_c_files
+	//def bundle = new File ( lib +'.'+shext )
 }
 
 
