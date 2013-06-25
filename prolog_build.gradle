@@ -49,6 +49,7 @@ try{
 }
 
 
+// defines prolog tests predicates which are triggered
 try{
 	pl_tests = pl_tests
 }catch(MissingPropertyException e){
@@ -66,13 +67,15 @@ project.ext {
 	shext = "bundle"
 	
 	if( OS.startsWith("Mac") ){
+	
 		isMac = true
 		shext = "bundle"
-		
 	}else   if( OS.startsWith("Windows") ){
+	
 		isWindows = true
 		shext = "dll"
 	}else{
+	
 	 	isLinux = true
 		shext = "so"
 	}
@@ -85,81 +88,49 @@ project.ext {
 	println "currently runnning on: " + OS + " " + OSBit +" Bit" +"\n"
 	
 	getLibraries()
-	
-	
-
 }
 
 
+// Collecting Libaries by default from the folder src/cpp/lib
+// In this folder it is checked if there are sub folders which names contain 32 or 64
+// So the script can automatically attach the libraries according to your system
 
 void getLibraries(){
-	
 	
 	project.ext.libraries = []				// List collecting all libs
 	
 	if(libFolder.exists()){
 		
 		architectures = libFolder.listFiles()
-		
 		libFolder.eachDir(){
 			
 			if (it.name ==~ /.*32.*/ && OSBit == 32) {
 				
 				String bitFolder = it.name
-			
 				it.eachFile FileType.FILE, {
-					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux){
-		
-						libraries << libFolder.name + bitFolder + it.name	
-					}
-					if (it.name ==~ /.*\.a/ && isMac) {
-						
-						libraries << libFolder.name + bitFolder + it.name
-					}
-					if (it.name ==~ /.*\.dll/ && isWindowd){
-					
-						libraries << libFolder.name + bitFolder + it.name
-					}
+				
+					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)		libraries << libFolder.name + bitFolder + it.name	
+					if (it.name ==~ /.*\.a/ && isMac) 					libraries << libFolder.name + bitFolder + it.name
+					if (it.name ==~ /.*\.dll/ && isWindows)				libraries << libFolder.name + bitFolder + it.name
 				}
 			}else if (it.name ==~ /.*64.*/ && OSBit == 64) {
 				
 				String bitFolder = it.name
-				
 				it.eachFile FileType.FILES, {
-					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux){
-	
-						libraries << "${libFolder}/${bitFolder}/${it.name}"
-					}
-					if (it.name ==~ /.*\.a/ && isMac) {
 					
-						libraries << "${libFolder}/${bitFolder}/${it.name}"
-					}
-					if (it.name ==~ /.*\.dll/ && isWindowd){
-				
-						libraries << "${libFolder}/${bitFolder}/${it.name}"	
-					}
+					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)		libraries << "${libFolder}/${bitFolder}/${it.name}"
+					if (it.name ==~ /.*\.a/ && isMac) 					libraries << "${libFolder}/${bitFolder}/${it.name}"
+					if (it.name ==~ /.*\.dll/ && isWindows)				libraries << "${libFolder}/${bitFolder}/${it.name}"	
 				}
 			}
 		}
 		libFolder.eachFile FileType.FILES , {
 		
-			if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux){
-	
-				libraries << libFolder.name + it.name
-				
-			}
-			if (it.name ==~ /.*\.a/ && isMac) {
-					
-				libraries << libFolder.name + it.name
-			}
-			if (it.name ==~ /.*\.dll/ && isWindowd){
-				
-				libraries << libFolder.name + it.name
-			}
+			if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)				libraries << libFolder.name + it.name
+			if (it.name ==~ /.*\.a/ && isMac) 							libraries << libFolder.name + it.name
+			if (it.name ==~ /.*\.dll/ && isWindows)						libraries << libFolder.name + it.name		
 		}
 	}
-	
-	
 }
 
 try{
@@ -178,7 +149,6 @@ try{
 	def pl_src_files = prologFolder.listFiles()
 	
 	project.ext.pl_files = []
-	
 	
 	if(pl_src_files != null){
 		int k = 0
@@ -319,20 +289,18 @@ task link ( dependsOn: ['makeLibDir'], type:Exec) {
 	
 	inputs.dir pl_srcs
 	inputs.dir c_srcs
-	if (c_resource_dir != null) inputs.dir c_resource_dir
-    outputs.file outputFiles+ outputName +"."+shext
-    outputs.file outputName+"."+shext
 	
-	outputs.file outputFiles+outputName+"."+shext
-	
+	if (c_resource_dir != null) 	inputs.dir c_resource_dir
+    if (libFolder.exists) 			inputs.dir libFolder
+	outputs.file outputFiles+ outputName +"."+shext
+    //outputs.file outputName+"."+shext	
+
 	all_c_files = c_files
 	if (c_resource_dir != null) all_c_files = all_c_files + c_resources
 	if (libraries != null && libraries.size != 0) all_c_files = all_c_files + ["-lstdc++"]+libraries + ["--LD"]
-	//println "Libaries: " + libraries
-	
-	//println	"\n\n" + 'splfr '+ '--verbose' + ' --output='+ outputFiles +outputName +'.'+ shext + ' --resource='+pl_ressource + " --source=" + pl_srcs +pl_file +" " + c_flags + all_c_files + "\n\n\n"
+	//println "Libaries: " + libraries	
+
 	commandLine  = ['splfr', '--verbose', '--output='+ outputFiles + outputName +'.'+shext, '--resource='+pl_ressource, "--source=" + pl_srcs +pl_file] + c_flags + all_c_files
-	//def bundle = new File ( lib +'.'+shext )
 }
 
 
