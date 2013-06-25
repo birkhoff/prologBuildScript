@@ -291,7 +291,7 @@ task link ( dependsOn: ['makeLibDir'], type:Exec) {
 	inputs.dir c_srcs
 	
 	if (c_resource_dir != null) 	inputs.dir c_resource_dir
-    if (libFolder.exists) 			inputs.dir libFolder
+    if (libFolder.exists()) 			inputs.dir libFolder
 	outputs.file outputFiles+ outputName +"."+shext
     //outputs.file outputName+"."+shext	
 
