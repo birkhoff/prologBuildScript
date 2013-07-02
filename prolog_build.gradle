@@ -285,7 +285,7 @@ try{
 }
 
 
-task link ( dependsOn: ['makeLibDir'], type:Exec) {
+task "link_$project.name" ( dependsOn: ['makeLibDir'], type:Exec) {
 	
 	inputs.dir pl_srcs
 	inputs.dir c_srcs
@@ -310,7 +310,7 @@ task makeLibDir() << {
 	destDir.mkdir()
 }
 
-task plTest ( dependsOn: ['makeLibDir'], type:Exec) {
+task "plTest_$project.name" ( dependsOn: ['makeLibDir'], type:Exec) {
 	if (enable_tests) {
 	commandLine  'sicstus', '-l', pl_srcs+pl_test_file, '--goal', "${pl_test_module}:assert(user:library_directory('${outputFiles}')),${pl_tests}" 
 	// sicstus -l myheap.pl --goal "myheap:test,halt."
