@@ -37,14 +37,14 @@ try{
 // name the goal for splfr
 try{
 	goal = goal
-}catch(MissingPropertyException e){
+} catch(MissingPropertyException e) {
 	project.ext.goal = "at_build"
 }
 
 // set c Flags for Compiler
 try{
 	c_flags = c_flags
-}catch(MissingPropertyException e){
+} catch(MissingPropertyException e) {
 	project.ext.c_flags = [ '--cflag=-m64', '-lgcc', '-lstdc++']
 }
 
@@ -66,22 +66,23 @@ project.ext {
 	isLinux = false
 	shext = "bundle"
 	
-	if( OS.startsWith("Mac") ){
+	if (OS.startsWith("Mac")) {
 	
 		isMac = true
 		shext = "bundle"
-	}else   if( OS.startsWith("Windows") ){
+	} else	if ( OS.startsWith("Windows")) {
 	
 		isWindows = true
 		shext = "dll"
-	}else{
+	} else {
 	
 	 	isLinux = true
 		shext = "so"
 	}
 	
 	OSBit = 32
-	if( OSArch.contains("64") ){
+	if (OSArch.contains("64")) {
+		
 		OSBit = 64
 	}
 	
@@ -95,7 +96,7 @@ project.ext {
 // In this folder it is checked if there are sub folders which names contain 32 or 64
 // So the script can automatically attach the libraries according to your system
 
-void getLibraries(){
+void getLibraries() {
 	
 	project.ext.libraries = []				// List collecting all libs
 	
@@ -107,7 +108,7 @@ void getLibraries(){
 			if (it.name ==~ /.*32.*/ && OSBit == 32) {
 				
 				String bitFolder = it.name
-				it.eachFile FileType.FILE, {
+				it.eachFile FileType.FILE {
 				
 					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)		libraries << libFolder.name + bitFolder + it.name	
 					if (it.name ==~ /.*\.a/ && isMac) 					libraries << libFolder.name + bitFolder + it.name
@@ -116,7 +117,7 @@ void getLibraries(){
 			}else if (it.name ==~ /.*64.*/ && OSBit == 64) {
 				
 				String bitFolder = it.name
-				it.eachFile FileType.FILES, {
+				it.eachFile FileType.FILES {
 					
 					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)		libraries << "${libFolder}/${bitFolder}/${it.name}"
 					if (it.name ==~ /.*\.a/ && isMac) 					libraries << "${libFolder}/${bitFolder}/${it.name}"
@@ -124,7 +125,7 @@ void getLibraries(){
 				}
 			}
 		}
-		libFolder.eachFile FileType.FILES , {
+		libFolder.eachFile FileType.FILES {
 		
 			if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)				libraries << libFolder.name + it.name
 			if (it.name ==~ /.*\.a/ && isMac) 							libraries << libFolder.name + it.name
