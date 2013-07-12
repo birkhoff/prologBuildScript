@@ -108,7 +108,7 @@ void getLibraries() {
 			if (it.name ==~ /.*32.*/ && OSBit == 32) {
 				
 				String bitFolder = it.name
-				it.eachFile FileType.FILE {
+				it.eachFile FileType.FILE, {
 				
 					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)		libraries << libFolder.name + bitFolder + it.name	
 					if (it.name ==~ /.*\.a/ && isMac) 					libraries << libFolder.name + bitFolder + it.name
@@ -117,7 +117,7 @@ void getLibraries() {
 			}else if (it.name ==~ /.*64.*/ && OSBit == 64) {
 				
 				String bitFolder = it.name
-				it.eachFile FileType.FILES {
+				it.eachFile FileType.FILES, {
 					
 					if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)		libraries << "${libFolder}/${bitFolder}/${it.name}"
 					if (it.name ==~ /.*\.a/ && isMac) 					libraries << "${libFolder}/${bitFolder}/${it.name}"
@@ -125,7 +125,7 @@ void getLibraries() {
 				}
 			}
 		}
-		libFolder.eachFile FileType.FILES {
+		libFolder.eachFile FileType.FILES , {
 		
 			if (it.name ==~ /.*\.so(\.[0-9]*)*/ && isLinux)				libraries << libFolder.name + it.name
 			if (it.name ==~ /.*\.a/ && isMac) 							libraries << libFolder.name + it.name
