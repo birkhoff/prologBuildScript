@@ -1,17 +1,18 @@
 prologBuildScript
 =================
 
-BuildScript aiming to provide a simple way to use sicstus splfr linker
+The prologBuildScript provides a simple way to use sicstus splfr linker
 
-In the curreng state your prolog files must be located in the folder you defined in pl_srcs
-and you c/cpp files must be located in the folder you defined for c_srcs
+In the curreng state your prolog files must be located in the folder you defined in the dynamic property <b>pl_srcs</b>
+and you c/cpp files must be located in the folder you defined for the property <b>c_srcs</b>
 
 By default these folder are defined as:   
 \tproject.ext.c_srcs = "${projectDir}/src/cpp/"
 \tproject.ext.pl_srcs = "${projectDir}/src/prolog/"
 
-Caution please be aware, that you can only link one prolog file to multiple c files.
-So basically all other files in pl_srcs should be test files.
+Caution!
+Please be aware that you can only link one prolog file to multiple c files.
+All other files in pl_srcs should be test files.
 
 By default the script will look for one prolog file that is located in pl_srcs that doesn't include the word "test" in 
 its name.
